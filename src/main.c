@@ -233,14 +233,14 @@ void processStateMenu()
 {
     JOY_setEventHandler(&joyHandlerMenu);
 
-    VDP_drawText("MENU STATE", 10, 13);
+    VDP_drawText("PRESS START TO PLAY", 10, 13);
 
     while (currentState == STATE_MENU)
     {
         SYS_doVBlankProcess();
     }
 
-    VDP_clearText(10, 13, 10);
+    VDP_clearText(10, 13, 20);
 }
 
 void processStatePlay()
