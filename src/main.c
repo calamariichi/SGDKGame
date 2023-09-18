@@ -1,6 +1,7 @@
 
 #include <genesis.h>
 #include <resources.h>
+#include <string.h>
 
 const u16 LENGTH_COL = 20;
 #define SOLID_TILE 1
@@ -23,7 +24,21 @@ const u8 LEVEL_COL[280] =
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 
 };
 
+//GAME STATES
+enum GAME_STATE
+{
+    STATE_MENU,
+    STATE_PLAY
+};
+enum GAME_STATE currentState;
 
+int score = 0;
+char label_score[6] = "SCORE\0";
+char str_score[4] = "0";
+int sign(int x)
+{
+    return (x > 0) - (x < 0);
+}
 
 s16 current_camera_x;
 s16 current_camera_y;
@@ -74,25 +89,39 @@ static void handleInput();
 static void collission();
 static void joyEvent(u16 joy, u16 changed, u16 state);
 
+void updateScore();
+
+//VARIABLES FOR STATES
+void basicInit();
+void processStateMenu();
+void processStatePlay();
+void joyHandlerMenu(u16 joy, u16 changed, u16 state);
+
 
 //When you want to do something ONCE, you should put it here.
 int main() 
 {
+    //PROCESSING MENU AND PLAY STATES
+    basicInit();
 
-    //Initializing player sprite
-    SPR_init();
-    JOY_setEventHandler(joyEvent);
+    // VDP_setTextPlane(BG_A);
+    // VDP_drawText(label_score,1 ,1);
+    // updateScore();
 
-    PAL_setPalette(PAL0, bg_pal0.data, DMA);
-    PAL_setPalette(PAL2, sp1.palette->data, DMA);
+    // //Initializing player sprite
+    // SPR_init();
+    // JOY_setEventHandler(joyEvent);
 
-    VDP_loadTileSet(&background_tileset, ind, DMA);
-    level_map = MAP_create(&background_map, BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind));
-    ind += background_tileset.numTile;
-    MAP_scrollTo(level_map, 0, 0);
+    // PAL_setPalette(PAL0, bg_pal0.data, DMA);
+    // PAL_setPalette(PAL2, sp1.palette->data, DMA);
 
-    player = SPR_addSprite(&sp1, fix32ToInt(player_x), fix32ToInt(player_y), TILE_ATTR(PAL2, FALSE, FALSE, TRUE));
-    SPR_setAnim(player, ANIM_IDLE); 
+    // VDP_loadTileSet(&background_tileset, ind, DMA);
+    // level_map = MAP_create(&background_map, BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind));
+    // ind += background_tileset.numTile;
+    // MAP_scrollTo(level_map, 0, 0);
+
+    // player = SPR_addSprite(&sp1, fix32ToInt(player_x), fix32ToInt(player_y), TILE_ATTR(PAL2, FALSE, FALSE, TRUE));
+    // SPR_setAnim(player, ANIM_IDLE); 
 
     //Draw background and foreground
     // PAL_setPalette(PAL0, bg1.palette->data, DMA);
@@ -104,12 +133,15 @@ int main()
 
     while(1) //Things you want to do EVERY SINGLE FRAME goes here.
     {
-        handleInput();
-        edge();
-        collission();
-        SPR_setPosition(player, fix32ToInt(player_x), fix32ToInt(player_y));
-        SPR_update();
-        SYS_doVBlankProcess();
+        // handleInput();
+        // edge();
+        // updateScore();
+        // collission();
+        // SPR_setPosition(player, fix32ToInt(player_x), fix32ToInt(player_y));
+        // SPR_update();
+        // SYS_doVBlankProcess();
+
+
         //VDP_setHorizontalScroll(BG_B, hscroll_offset);
         //hscroll_offset -= 1;
         
@@ -117,6 +149,21 @@ int main()
         // hscroll_offset_fore -= 2;
 
         //For versions prior to SGDK 1.60 use VDP_waitVSync instead.
+
+        switch(currentState)
+        {
+            case STATE_MENU:
+            {
+                processStateMenu();
+                break;
+            }
+            case STATE_PLAY:
+            {
+                processStatePlay();
+                break;
+            }
+        }
+        SYS_doVBlankProcess();
     }
     return (0);
 }
@@ -174,6 +221,82 @@ static void handleInput()
     }
 
     SPR_setPosition(player, fix32ToInt(player_x), fix32ToInt(player_y));
+}
+
+void basicInit()
+{
+    JOY_init();
+    currentState = STATE_MENU;
+}
+
+void processStateMenu()
+{
+    JOY_setEventHandler(&joyHandlerMenu);
+
+    VDP_drawText("MENU STATE", 10, 13);
+
+    while (currentState == STATE_MENU)
+    {
+        SYS_doVBlankProcess();
+    }
+
+    VDP_clearText(10, 13, 10);
+}
+
+void processStatePlay()
+{
+    JOY_setEventHandler(NULL);
+    VDP_drawText("PLAY STATE", 10, 13);
+
+    VDP_setTextPlane(BG_A);
+    VDP_drawText(label_score,1 ,1);
+    updateScore();
+
+    //Initializing player sprite
+    SPR_init();
+    JOY_setEventHandler(joyEvent);
+
+    PAL_setPalette(PAL0, bg_pal0.data, DMA);
+    PAL_setPalette(PAL2, sp1.palette->data, DMA);
+
+    VDP_loadTileSet(&background_tileset, ind, DMA);
+    level_map = MAP_create(&background_map, BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind));
+    ind += background_tileset.numTile;
+    MAP_scrollTo(level_map, 0, 0);
+
+    player = SPR_addSprite(&sp1, fix32ToInt(player_x), fix32ToInt(player_y), TILE_ATTR(PAL2, FALSE, FALSE, TRUE));
+    SPR_setAnim(player, ANIM_IDLE); 
+
+    while (currentState == STATE_PLAY)
+    {
+        handleInput();
+        edge();
+        updateScore();
+        collission();
+        SPR_setPosition(player, fix32ToInt(player_x), fix32ToInt(player_y));
+        SPR_update();
+        SYS_doVBlankProcess();
+    }
+
+    VDP_clearText(10, 13, 10);
+}
+
+void joyHandlerMenu(u16 joy, u16 changed, u16 state)
+{
+    if (joy == JOY_1)
+    {
+        if (state & BUTTON_START)
+        {
+            currentState = STATE_PLAY;
+        }
+    }
+}
+
+void updateScore()
+{
+    sprintf(str_score, "%d", score);
+    VDP_clearText(1, 2, 3);
+    VDP_drawText(str_score, 1, 2);
 }
 
 static void edge()
@@ -335,6 +458,8 @@ static void joyEvent(u16 joy, u16 changed, u16 state)
      {
         player_y_vel -= jump_vel;
         jumping = TRUE;
+        score++;
+        updateScore();
      }
      
 }
