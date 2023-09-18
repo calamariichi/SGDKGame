@@ -1,0 +1,1 @@
+This is a personal project to learn how to develop games for the Sega Gensis/Mega Drive
