@@ -80,20 +80,14 @@ fix32 terminal_vel = FIX32(6);
 
 //
 
-typedef struct
-{
-    u8 active;
-    s16 x;
-    s16 y;
-    s8 speedX;
-    s8 speedY;
-    Sprite* sprite;
-    u8 anim;
-} Pizza;
+int pizza_pos_x = 100;
+int pizza_pos_y = 100;
+int pizza_vel_x = 1;
+int pizza_vel_y = 1;
+int pizza_width = 32;
+int pizza_height = 32;
 
-Pizza pizzas[30];
-
-Pizza* pizza;
+Sprite* pizza;
 
 u8 ticks;
 
@@ -184,6 +178,8 @@ void basicInit()
 {
     JOY_init();
     currentState = STATE_MENU;
+
+    
 }
 
 void processStateMenu()
@@ -222,83 +218,38 @@ void processStatePlay()
     ind += background_tileset.numTile;
     MAP_scrollTo(level_map, 0, 0);
 
+    pizza = SPR_addSprite(&sp_pizza, 100, 320, TILE_ATTR(PAL1, 0, FALSE, FALSE));
     player = SPR_addSprite(&sp1, fix32ToInt(player_x), fix32ToInt(player_y), TILE_ATTR(PAL2, FALSE, FALSE, TRUE));
     SPR_setAnim(player, ANIM_IDLE);
 
 //
-    for(u8 i = 0 ; i < 30 ; i++)
-    {
-        pizza=&pizzas[i];
-		pizza->active=0;
-		pizza->speedX=0;
-		pizza->speedY=0;
-		pizza->x=0;
-		pizza->y=-32;
-
-        if(pizza->sprite != NULL ){
-		SPR_setPosition(pizza->sprite, 0, -32);
-		SPR_setVisibility(pizza->sprite, HIDDEN);
-		}
-    } 
-
-    spawnPizza();
-    pizzas[0].x=0;
-    pizzas[0].y=20;
 
     ticks = 0;
 
+while (currentState == STATE_PLAY)
+{
 
 //
-    while (currentState == STATE_PLAY)
+
+    ++ticks;
+    if(ticks == 240)
     {
-		TICKS2 = ticks % 2;
-		TICKS3 = (ticks % 3 == 0);
-		TICKS4 = (ticks % 4 == 0);
-		TICKS6 = (ticks % 6 == 0);
-		TICKS10 = (ticks % 10 == 0);
-
-        for(u8 i = 0 ; i < 30 ; i++)
-        {
-            pizza=&pizzas[i];
-
-            if(pizza->active)
-            {
-                pizza->x+=pizza->speedX;
-                pizza->y+=pizza->speedY;
-
-                if (TICKS10)
-                {
-                    pizza->speedY=pizza->speedY+1;
-                }
-            }
-        }
-
-        	if( (score < 5 && ticks % 240 == 30)
-			|| (score >= 5 && score < 10 && ticks % 220 == 30)
-			|| (score >= 10 && score < 15 && ticks % 200 == 30)
-			|| (score >= 15 && score < 20 && ticks % 180 == 30)
-			|| (score >= 20 && ticks % 160 == 30)
-            ){
-                spawnPizza();
-            }
-
-            ++ticks;
-            if(ticks == 240)
-            {
-                ticks = 0;
-            }
-//
-        handleInput();
-        edge();
-        updateScore();
-        collission();
-        SPR_setPosition(player, fix32ToInt(player_x), fix32ToInt(player_y));
-        SPR_update();
-        SYS_doVBlankProcess();
+        ticks = 0;
     }
 
-    VDP_clearText(10, 13, 10);
+        	
+//
+    handleInput();
+    spawnPizza();
+    edge();
+    updateScore();
+    collission();
+    SPR_setPosition(player, fix32ToInt(player_x), fix32ToInt(player_y));
 
+    SPR_update();
+    SYS_doVBlankProcess();
+
+    }
 }
 
 void joyHandlerMenu(u16 joy, u16 changed, u16 state)
@@ -455,33 +406,8 @@ static void joyEvent(u16 joy, u16 changed, u16 state)
 
 static void spawnPizza()
 {
-    u8 index;
-    for (index = 0; index < 30; index++)
-    {
-        if(pizzas[index].active == 0)
-        {
-            break;
-        }
+    pizza_pos_x += pizza_vel_x;
+    pizza_pos_y += pizza_vel_y;
 
-    }
-
-    if (index < 30)
-    {
-        pizzas[index].active=1;
-        pizzas[index].x=0;
-        pizzas[index].y=20+(random() % 100);
-        pizzas[index].speedX=1;
-        pizzas[index].speedY=-3;
-
-        if (pizzas[index].sprite == NULL)
-        {
-            pizzas[index].sprite = SPR_addSprite(&sp_pizza, pizzas[index].x, pizzas[index].y, TILE_ATTR(PAL1, FALSE, FALSE, FALSE));
-        }
-
-        else
-        {
-            SPR_setVisibility(pizzas[index].sprite, VISIBLE);
-        }
-    }
-    
+    SPR_setPosition(pizza, pizza_pos_x, pizza_pos_y);
 }
